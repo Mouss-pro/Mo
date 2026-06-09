@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Superviseur</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a73e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Superviseur">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js');
+    });
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c10;
+  --surface:#111318;
+  --card:#161a22;
+  --border:#1e2330;
+  --border2:#252d3d;
+  --text:#e8eaf0;
+  --muted:#6b7594;
+  --muted2:#8d97b5;
+  --gold:#d4a843;
+  --gold2:#f0c866;
+  --green:#22c55e;
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --purple:#a855f7;
+  --accent:#d4a843;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(212,168,67,.08),transparent)}
+
+/* ── LOGIN ── */
+#loginScreen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.login-box{
+  background:var(--surface);border:1px solid var(--border2);border-radius:20px;
+  padding:40px 36px;max-width:400px;width:100%;
+  box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(212,168,67,.08);
+  position:relative;overflow:hidden;
+}
+.login-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo .icon{font-size:42px;display:block;margin-bottom:10px}
+.login-logo h1{font-family:'Playfair Display',serif;font-size:26px;color:var(--gold);letter-spacing:.02em}
+.login-logo p{font-size:12px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:4px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px;font-weight:500}
+.field input,.field textarea{
+  width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text)!important;
+  -webkit-text-fill-color:var(--text)!important;border-radius:10px;padding:12px 14px;
+  font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;
+}
+.field input::placeholder{color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important}
+.field input:focus,.field textarea:focus{border-color:var(--gold)}
+.field textarea{resize:vertical;min-height:140px;font-size:12px;line-height:1.7}
+.btn-gold{
+  width:100%;background:var(--gold);color:#0a0c10;border:none;border-radius:10px;
+  padding:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.02em;
+}
+.btn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(212,168,67,.3)}
+.err-msg{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;
+  border-radius:8px;padding:10px 14px;font-size:13px;margin-top:12px;display:none}
+
+/* ── DASHBOARD ── */
+#dashboard{display:none;min-height:100vh;flex-direction:column}
+
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.header-brand{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold)}
+.header-brand span{font-size:12px;color:var(--muted);display:block;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:.06em}
+.btn-logout{background:var(--card);border:1px solid var(--border2);color:var(--muted2);padding:7px 14px;
+  border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;transition:all .2s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+.btn-save{background:var(--gold);color:#0a0c10;border:none;border-radius:8px;padding:7px 16px;
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-save:hover{background:var(--gold2)}
+@media print{
+  #loginScreen{display:none!important}
+  header{position:relative!important}
+  .btn-save,.btn-logout,.code-zone,#sessionsZone{display:none!important}
+  body{background:#fff!important;color:#000!important}
+  .rapport-header,.section{border:1px solid #ddd!important;background:#fff!important;color:#000!important}
+  .rapport-title,.section-title{color:#000!important}
+  .kpi-box{background:#f5f5f5!important;border:1px solid #ddd!important}
+  .kv,.kn,.bar-label,.bar-val{color:#000!important}
+  .tbl th,.tbl td{color:#000!important;border-color:#ddd!important}
+  .stock-pill{background:#f5f5f5!important;border:1px solid #ddd!important;color:#000!important}
+}
+
+.main-content{flex:1;padding:24px;max-width:900px;margin:0 auto;width:100%}
+
+/* ── CODE INPUT ZONE ── */
+.code-zone{
+  background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px;
+  margin-bottom:28px;position:relative;overflow:hidden;
+}
+.code-zone::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.code-zone h2{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);margin-bottom:16px}
+.code-input-row{display:flex;gap:10px;align-items:flex-start}
+.code-input-row textarea{
+  flex:1;background:var(--card);border:1px solid var(--border2);color:var(--text)!important;
+  -webkit-text-fill-color:var(--text)!important;border-radius:10px;padding:12px 14px;
+  font-family:'Space Mono',monospace;font-size:11px;outline:none;transition:border-color .2s;
+  resize:vertical;min-height:72px;line-height:1.6;
+}
+.code-input-row textarea:focus{border-color:var(--gold)}
+.code-input-row textarea::placeholder{color:var(--muted)!important;-webkit-text-fill-color:var(--muted)!important}
+.btn-decode{background:var(--gold);color:#0a0c10;border:none;border-radius:10px;padding:12px 20px;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;
+  transition:all .2s;align-self:flex-end}
+.btn-decode:hover{background:var(--gold2)}
+
+/* ── SESSIONS ── */
+.sessions-title{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:14px;font-weight:500}
+.session-list{display:flex;flex-direction:column;gap:8px}
+.session-chip{
+  display:flex;align-items:center;gap:12px;
+  background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px 16px;cursor:pointer;transition:all .2s;
+}
+.session-chip:hover,.session-chip.active{border-color:var(--gold);background:rgba(212,168,67,.06)}
+.session-chip .chip-date{font-weight:700;font-size:13px;flex:1}
+.session-chip .chip-ca{font-family:'Space Mono',monospace;font-size:13px;color:var(--green)}
+.session-chip .chip-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;transition:color .15s}
+.session-chip .chip-del:hover{color:var(--red)}
+
+/* ── RAPPORT ── */
+#rapportView{display:none}
+.rapport-header{
+  background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+  padding:24px;margin-bottom:20px;position:relative;overflow:hidden;
+}
+.rapport-header::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--gold),var(--purple),var(--gold))}
+.rapport-meta{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.rapport-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold)}
+.rapport-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.kpi-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kpi-box .kv{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.kpi-box .kn{font-family:'Space Mono',monospace;font-size:20px;font-weight:700}
+
+.section{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:20px;margin-bottom:16px;overflow:hidden}
+.section-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold2);
+  margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+
+/* bar chart */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-label{font-size:13px;min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--card);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted2);min-width:90px;text-align:right}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.tbl tr:last-child td{border-bottom:none}
+.num{font-family:'Space Mono',monospace}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.badge-paid{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-unpaid{background:rgba(239,68,68,.15);color:var(--red)}
+
+.stock-grid{display:flex;flex-wrap:wrap;gap:7px}
+.stock-pill{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:6px 12px;font-size:12px;display:flex;gap:6px;align-items:center}
+.stock-pill strong{font-family:'Space Mono',monospace}
+
+.empty{color:var(--muted);font-size:13px;padding:12px 0;font-style:italic}
+
+/* ── PERIODE ── */
+.periode-zone{
+  background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px;
+  margin-bottom:28px;position:relative;overflow:hidden;
+}
+.periode-zone::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--purple),transparent)}
+.periode-zone h2{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);margin-bottom:14px}
+.periode-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.periode-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
+.periode-field label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500}
+.periode-field input[type=date]{
+  background:var(--card);border:1px solid var(--border2);color:var(--text);
+  border-radius:10px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s;width:100%;
+  color-scheme:dark;
+}
+.periode-field input[type=date]:focus{border-color:var(--purple)}
+.btn-periode{background:var(--purple);color:#fff;border:none;border-radius:10px;
+  padding:11px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;white-space:nowrap;transition:all .2s;align-self:flex-end}
+.btn-periode:hover{background:#c026d3}
+.periode-info{font-size:12px;color:var(--muted);margin-top:10px}
+.periode-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.periode-chip-btn{background:var(--card);border:1px solid var(--border2);color:var(--muted2);
+  padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+.periode-chip-btn:hover{border-color:var(--purple);color:var(--purple)}
+
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);
+  background:var(--green);color:#fff;padding:10px 20px;border-radius:10px;font-weight:700;
+  font-size:14px;z-index:9999;transition:transform .3s;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* responsive */
+@media(max-width:600px){
+  .main-content{padding:16px}
+  .rapport-meta{flex-direction:column}
+  .code-input-row{flex-direction:column}
+  .btn-decode{width:100%}
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="icon">🏢</span>
+      <h1>Supervision DG</h1>
+      <p>Buvette — Espace Direction</p>
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPwd" placeholder="Mot de passe DG" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="btn-gold" onclick="login()">Accéder au tableau de bord</button>
+    <div class="err-msg" id="loginErr">Mot de passe incorrect.</div>
+    <div style="margin-top:16px">
+      <button onclick="resetAcces()" style="width:100%;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);color:#fca5a5;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+        🔓 Désactiver le mot de passe et entrer
+      </button>
+    </div>
+    <div style="margin-top:10px;text-align:center">
+      <button onclick="ouvrirRecuperation()" style="background:none;border:none;color:var(--muted2);font-size:12px;cursor:pointer;text-decoration:underline;font-family:'DM Sans',sans-serif">Mot de passe oublié ?</button>
+    </div>
+    <!-- RECUPERATION -->
+    <div id="recuperationZone" style="display:none;margin-top:16px;border-top:1px solid var(--border2);padding-top:16px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">Code de secours</div>
+      <input type="text" id="inputSecours" placeholder="Entrez votre code de secours"
+        style="width:100%;background:var(--card);border:1px solid var(--border2);color:var(--text);-webkit-text-fill-color:var(--text);border-radius:10px;padding:11px 14px;font-size:14px;outline:none;margin-bottom:8px"
+        onkeydown="if(event.key==='Enter')validerRecuperation()">
+      <button onclick="validerRecuperation()" style="width:100%;background:var(--gold);color:#0a0c10;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer">Récupérer l'accès</button>
+      <div id="secoursErr" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:8px">Code incorrect.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard">
+  <header>
+    <div class="header-brand">
+      🏢 Supervision DG
+      <span>Tableau de bord — Direction</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-save" id="btnSave" onclick="sauvegarderRapport()" style="display:none">💾 Sauvegarder</button>
+      <button class="btn-logout" style="border-color:var(--border2)" onclick="ouvrirChangePwd()" id="btnPwd" title="Gérer le mot de passe">🔑</button>
+      <button class="btn-logout" onclick="logout()">⎋ Déconnexion</button>
+    </div>
+  </header>
+
+  <div class="main-content">
+
+    <!-- Zone saisie code -->
+    <div class="code-zone">
+      <h2>📥 Importer un rapport journalier</h2>
+      <div class="code-input-row">
+        <textarea id="codeInput" placeholder="Collez ici le code du rapport transmis par le responsable de la buvette…"></textarea>
+        <button class="btn-decode" onclick="importerCode()">Décoder ▶</button>
+      </div>
+      <div class="err-msg" id="codeErr" style="margin-top:10px">Code invalide ou corrompu.</div>
+      <div style="margin-top:14px;text-align:center">
+        <label style="display:inline-flex;align-items:center;gap:8px;background:#1a73e8;color:#fff;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600">
+          &#128193; Importer fichier .txt
+          <input type="file" accept=".txt" style="display:none" onchange="importerFichierJSON(event)">
+        </label>
+      </div>
+      <div style="margin-top:14px;text-align:center">
+        <label style="display:inline-flex;align-items:center;gap:8px;background:#1a73e8;color:#fff;padding:10px 20px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600">
+          📁 Importer fichier .txt
+          <input type="file" accept=".txt" style="display:none" onchange="importerFichierJSON(event)">
+        </label>
+      </div>
+    </div>
+
+    <!-- Sessions enregistrées -->
+    <div id="sessionsZone" style="display:none;margin-bottom:28px">
+      <div class="sessions-title">📅 Rapports reçus</div>
+      <div class="session-list" id="sessionList"></div>
+    </div>
+
+    <!-- Rapport sur plage de dates -->
+    <div id="periodeZone" style="display:none" class="periode-zone">
+      <h2>📆 Rapport sur une période</h2>
+      <div class="periode-chips">
+        <button class="periode-chip-btn" onclick="raccourciPeriode(7)">7 derniers jours</button>
+        <button class="periode-chip-btn" onclick="raccourciPeriode(15)">15 jours</button>
+        <button class="periode-chip-btn" onclick="raccourciPeriode(30)">30 jours</button>
+        <button class="periode-chip-btn" onclick="raccourciPeriodeMois()">Ce mois-ci</button>
+      </div>
+      <div class="periode-row" style="margin-top:12px">
+        <div class="periode-field">
+          <label>Du</label>
+          <input type="date" id="dateDebut">
+        </div>
+        <div class="periode-field">
+          <label>Au</label>
+          <input type="date" id="dateFin">
+        </div>
+        <button class="btn-periode" onclick="genererRapportPeriode()">Générer ▶</button>
+      </div>
+      <div class="periode-info" id="periodeInfo"></div>
+    </div>
+
+    <!-- Vue rapport -->
+    <div id="rapportView"></div>
+
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const DG_PWD_KEY = 'buvette_dg_pwd';
+const DG_SESSIONS_KEY = 'buvette_dg_sessions';
+
+// Stockage robuste : essaie localStorage, fallback sessionStorage, fallback mémoire
+const _store = {};
+function storeSet(key, val){
+  try { localStorage.setItem(key, val); return; } catch(e){}
+  try { sessionStorage.setItem(key, val); return; } catch(e){}
+  _store[key] = val;
+}
+function storeGet(key){
+  try { const v = localStorage.getItem(key); if(v!==null) return v; } catch(e){}
+  try { const v = sessionStorage.getItem(key); if(v!==null) return v; } catch(e){}
+  return _store[key]||null;
+}
+function storeDel(key){
+  try { localStorage.removeItem(key); } catch(e){}
+  try { sessionStorage.removeItem(key); } catch(e){}
+  delete _store[key];
+}
+
+// ─── UTILS ───
+let toastTmr;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=type==='err'?'#ef4444':type==='warn'?'#f59e0b':'#22c55e';
+  el.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr=setTimeout(()=>el.classList.remove('show'),2800);
+}
+function fmtDate(d){
+  try{ return new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ return d; }
+}
+const fcfa = v => new Intl.NumberFormat('fr-FR').format(Math.round(v))+' FCFA';
+
+// ─── AUTH ───
+function getPwd(){ return storeGet(DG_PWD_KEY)||''; }
+function pwdActif(){ return !!storeGet(DG_PWD_KEY); }
+
+// Au chargement : accès direct si pas de mot de passe
+document.addEventListener('DOMContentLoaded', function(){
+  if(!pwdActif()){ accederSansMotDePasse(); }
+});
+// Double sécurité pour Android (content://)
+setTimeout(function(){
+  if(!pwdActif() && document.getElementById('loginScreen').style.display !== 'none'){
+    accederSansMotDePasse();
+  }
+}, 300);
+function login(){
+  const pwd = document.getElementById('loginPwd').value;
+  if(!pwdActif() || pwd === getPwd()){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('dashboard').style.display='flex';
+    document.getElementById('loginErr').style.display='none';
+    majBtnPwd();
+    renderSessions();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('loginPwd').value='';
+  }
+}
+
+function resetAcces(){
+  storeDel(DG_PWD_KEY);
+  storeDel(DG_PWD_KEY);
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('dashboard').style.display='flex';
+  document.getElementById('dashboard').style.flexDirection='column';
+  majBtnPwd();
+  renderSessions();
+}
+
+function accederSansMotDePasse(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('dashboard').style.display='flex';
+  majBtnPwd();
+  renderSessions();
+}
+function logout(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loginPwd').value='';
+  document.getElementById('rapportView').style.display='none';
+  document.getElementById('rapportView').innerHTML='';
+}
+function majBtnPwd(){
+  const btn = document.getElementById('btnPwd');
+  if(!btn) return;
+  btn.title = pwdActif() ? 'Mot de passe actif — cliquer pour gérer' : 'Aucun mot de passe — cliquer pour en activer un';
+  btn.style.borderColor = pwdActif() ? 'var(--gold)' : 'var(--border2)';
+  btn.style.color = pwdActif() ? 'var(--gold)' : '';
+}
+
+// ─── SESSIONS ───
+function getSessions(){ try{ return JSON.parse(storeGet(DG_SESSIONS_KEY)||'[]'); } catch(e){ return []; } }
+function saveSessions(s){ storeSet(DG_SESSIONS_KEY, JSON.stringify(s)); }
+
+function renderSessions(){
+  const sessions = getSessions();
+  const zone = document.getElementById('sessionsZone');
+  const list = document.getElementById('sessionList');
+  const periodeZone = document.getElementById('periodeZone');
+  if(!sessions.length){ zone.style.display='none'; periodeZone.style.display='none'; return; }
+  zone.style.display='block';
+  // Afficher la zone période seulement si >= 2 rapports
+  periodeZone.style.display = sessions.length >= 2 ? 'block' : 'none';
+  // Init dates par défaut : min et max des sessions disponibles
+  const dates = sessions.map(s=>s.date).sort();
+  document.getElementById('dateDebut').value = dates[0];
+  document.getElementById('dateFin').value = dates[dates.length-1];
+  document.getElementById('periodeInfo').textContent = sessions.length + ' rapport(s) disponible(s) — du ' + fmtDateShort(dates[0]) + ' au ' + fmtDateShort(dates[dates.length-1]);
+
+  list.innerHTML = [...sessions].reverse().map(s=>`
+    <div class="session-chip" onclick="afficherSession('${s.date}')">
+      <div>
+        <div class="chip-date">📅 ${fmtDate(s.date)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.nomBuvette||'Buvette'} — ${s.responsable||'—'}</div>
+      </div>
+      <span class="chip-ca">${fcfa(s.totalCA)}</span>
+      <button class="chip-del" onclick="event.stopPropagation();supprimerSession('${s.date}')" title="Supprimer">✕</button>
+    </div>
+  `).join('');
+}
+
+// ─── RACCOURCIS PÉRIODE ───
+function raccourciPeriode(jours){
+  const sessions = getSessions();
+  if(!sessions.length) return;
+  const dates = sessions.map(s=>s.date).sort();
+  const fin = dates[dates.length-1];
+  const dFin = new Date(fin+'T00:00:00');
+  const dDeb = new Date(dFin);
+  dDeb.setDate(dDeb.getDate() - (jours-1));
+  document.getElementById('dateDebut').value = dDeb.toISOString().slice(0,10);
+  document.getElementById('dateFin').value = fin;
+  genererRapportPeriode();
+}
+
+function raccourciPeriodeMois(){
+  const now = new Date();
+  const premier = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+  const dernier = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
+  document.getElementById('dateDebut').value = premier;
+  document.getElementById('dateFin').value = dernier;
+  genererRapportPeriode();
+}
+
+function fmtDateShort(d){
+  try{ return new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}); }
+  catch(e){ return d; }
+}
+
+// ─── GÉNÉRER RAPPORT PÉRIODE ───
+function genererRapportPeriode(){
+  const deb = document.getElementById('dateDebut').value;
+  const fin = document.getElementById('dateFin').value;
+  if(!deb || !fin){ toast('Sélectionnez une date de début et de fin','warn'); return; }
+  if(deb > fin){ toast('La date de début doit être avant la date de fin','err'); return; }
+
+  const sessions = getSessions().filter(s => s.date >= deb && s.date <= fin);
+  if(!sessions.length){
+    toast('Aucun rapport dans cette période','warn');
+    document.getElementById('rapportView').style.display='none';
+    return;
+  }
+  renderRapportPeriode(sessions, deb, fin);
+}
+
+// ─── RENDER RAPPORT PÉRIODE (agrégé) ───
+function renderRapportPeriode(sessions, deb, fin){
+  const view = document.getElementById('rapportView');
+  view.style.display='block';
+
+  // Tri chronologique
+  sessions = [...sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  const nbJours = sessions.length;
+
+  // ── AGRÉGATION ──
+  let totalCA = 0, totalPertes = 0, totalApproCout = 0;
+  let totalNbVentes = 0, totalNbCommandes = 0, totalImpaye = 0;
+  const venduMap = {}, caMap = {}, boissonRef = {};
+  const caParJour = []; // pour graphe évolution
+
+  sessions.forEach(data => {
+    totalCA       += data.totalCA||0;
+    totalPertes   += data.totalPertes||0;
+    totalApproCout+= data.totalApproCout||0;
+    totalNbVentes += data.nbVentes||0;
+    totalNbCommandes += data.nbCommandes||0;
+
+    // impayés
+    totalImpaye += (data.commandes||[]).filter(c=>c.estImpaye&&!c.regle).reduce((s,c)=>s+c.total,0)
+      + (data.ventes||[]).filter(v=>/(impay|crédit|credit|dette|doit)/i.test(v.obs||'')).reduce((s,v)=>s+v.montant,0);
+
+    // ventes par boisson
+    (data.ventes||[]).forEach(v=>{
+      venduMap[v.boissonId]=(venduMap[v.boissonId]||0)+v.qte;
+      caMap[v.boissonId]=(caMap[v.boissonId]||0)+v.montant;
+    });
+    (data.commandes||[]).forEach(c=>c.items.forEach(i=>{
+      venduMap[i.boissonId]=(venduMap[i.boissonId]||0)+i.qte;
+      caMap[i.boissonId]=(caMap[i.boissonId]||0)+i.sous_total;
+    }));
+
+    // référentiel boissons
+    (data.stockSnapshot||[]).forEach(b=>{ if(!boissonRef[b.id]) boissonRef[b.id]=b; });
+
+    // CA par jour
+    caParJour.push({ date: data.date, ca: data.totalCA||0 });
+  });
+
+  const margeTheo = totalCA - totalApproCout;
+  const caJourMoyen = totalCA / nbJours;
+
+  // Top ventes
+  const sorted = Object.keys(venduMap)
+    .map(id=>({ b: boissonRef[id]||{id,nom:id,emoji:''}, qte: venduMap[id], ca: caMap[id]||0 }))
+    .sort((a,b_)=>b_.qte-a.qte);
+  const maxQte = sorted[0]?.qte||1;
+
+  // ── HTML ──
+  let html = `
+  <div class="rapport-header">
+    <div class="rapport-meta">
+      <div>
+        <div class="rapport-title">📆 ${fmtDateShort(deb)} → ${fmtDateShort(fin)}</div>
+        <div class="rapport-sub">Rapport de période · <strong style="color:var(--gold)">${nbJours} jour${nbJours>1?'s':''}</strong> analysé${nbJours>1?'s':''}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:right;font-family:'Space Mono',monospace">Consolidé<br>confidentiel</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kv">CA Total période</div>
+        <div class="kn" style="color:var(--green)">${fcfa(totalCA)}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kv">Moy. / jour</div>
+        <div class="kn" style="color:var(--gold)">${fcfa(caJourMoyen)}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kv">Ventes totales</div>
+        <div class="kn" style="color:var(--text)">${totalNbVentes+totalNbCommandes}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${totalNbVentes} ind. · ${totalNbCommandes} cmd</div>
+      </div>
+      ${totalApproCout>0?`<div class="kpi-box">
+        <div class="kv">Coût Appro</div>
+        <div class="kn" style="color:var(--blue)">${fcfa(totalApproCout)}</div>
+      </div>`:''}
+      ${margeTheo>0?`<div class="kpi-box">
+        <div class="kv">Marge théo.</div>
+        <div class="kn" style="color:var(--purple)">${fcfa(margeTheo)}</div>
+      </div>`:''}
+      ${totalImpaye>0?`<div class="kpi-box">
+        <div class="kv">⚠️ Impayés</div>
+        <div class="kn" style="color:var(--red)">${fcfa(totalImpaye)}</div>
+      </div>`:''}
+      ${totalPertes>0?`<div class="kpi-box">
+        <div class="kv">Pertes</div>
+        <div class="kn" style="color:var(--red)">${fcfa(totalPertes)}</div>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // ── ÉVOLUTION CA PAR JOUR ──
+  if(nbJours > 1){
+    const maxCA = Math.max(...caParJour.map(x=>x.ca))||1;
+    html+=`<div class="section">
+      <div class="section-title">📈 Évolution du CA jour par jour</div>
+      ${caParJour.map(x=>{
+        const pct = (x.ca/maxCA*100).toFixed(0);
+        const isMax = x.ca===maxCA;
+        return `<div class="bar-row">
+          <div class="bar-label" style="min-width:110px;font-size:12px">${fmtDateShort(x.date)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${isMax?'var(--green)':'var(--gold)'}"></div></div>
+          <div class="bar-val">${fcfa(x.ca)}</div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:11px;color:var(--muted);margin-top:8px">
+        🟢 Meilleur jour : <strong style="color:var(--green)">${fmtDateShort(caParJour.reduce((a,b_)=>b_.ca>a.ca?b_:a).date)}</strong>
+        &nbsp;·&nbsp;
+        🔴 Moins bon : <strong style="color:var(--red)">${fmtDateShort(caParJour.reduce((a,b_)=>b_.ca<a.ca?b_:a).date)}</strong>
+      </div>
+    </div>`;
+  }
+
+  // ── TOP VENTES PÉRIODE ──
+  if(sorted.length){
+    html+=`<div class="section">
+      <div class="section-title">🏆 Top Ventes sur la Période</div>
+      ${sorted.map(x=>`
+        <div class="bar-row">
+          <div class="bar-label">${x.b.emoji||''} ${x.b.nom}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(x.qte/maxQte*100).toFixed(0)}%"></div></div>
+          <div class="bar-val">${x.qte} u · ${fcfa(x.ca)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ── RÉCAPITULATIF PAR JOURNÉE ──
+  html+=`<div class="section">
+    <div class="section-title">📋 Récapitulatif par journée</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:var(--card)">
+        <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Date</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">CA</th>
+        <th style="padding:8px 10px;text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Ventes</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Appro</th>
+        <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Pertes</th>
+      </tr></thead>
+      <tbody>
+        ${sessions.map(s=>{
+          const imp = (s.commandes||[]).filter(c=>c.estImpaye&&!c.regle).reduce((a,c)=>a+c.total,0);
+          return `<tr style="cursor:pointer" onclick="afficherSession('${s.date}')" title="Voir le détail">
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
+              <span style="color:var(--gold);font-weight:600">${fmtDateShort(s.date)}</span>
+              <span style="font-size:11px;color:var(--muted);display:block">${s.responsable||'—'}</span>
+            </td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-family:'Space Mono',monospace;font-weight:700">${fcfa(s.totalCA||0)}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;color:var(--text)">${(s.nbVentes||0)+(s.nbCommandes||0)}${imp>0?' <span style="color:var(--red);font-size:10px">⚠️</span>':''}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--blue);font-size:12px">${s.totalApproCout>0?fcfa(s.totalApproCout):'—'}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--red);font-size:12px">${s.totalPertes>0?fcfa(s.totalPertes):'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+      <tfoot><tr style="background:var(--card);font-weight:700">
+        <td style="padding:10px;font-size:12px;color:var(--muted)">TOTAL (${nbJours}j)</td>
+        <td style="padding:10px;text-align:right;color:var(--green);font-family:'Space Mono',monospace">${fcfa(totalCA)}</td>
+        <td style="padding:10px;text-align:center;color:var(--text)">${totalNbVentes+totalNbCommandes}</td>
+        <td style="padding:10px;text-align:right;color:var(--blue)">${totalApproCout>0?fcfa(totalApproCout):'—'}</td>
+        <td style="padding:10px;text-align:right;color:var(--red)">${totalPertes>0?fcfa(totalPertes):'—'}</td>
+      </tr></tfoot>
+    </table></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">💡 Cliquer sur une ligne pour voir le rapport détaillé de cette journée</div>
+  </div>`;
+
+  view.innerHTML = html;
+  rapportActif = { _periode: true, deb, fin, nbJours, totalCA };
+  document.getElementById('btnSave').style.display = 'block';
+  view.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function afficherSession(date){
+  const sessions = getSessions();
+  const s = sessions.find(x=>x.date===date);
+  if(!s) return;
+  document.querySelectorAll('.session-chip').forEach(el=>el.classList.remove('active'));
+  event.currentTarget?.classList.add('active');
+  renderRapport(s);
+}
+
+function supprimerSession(date){
+  if(!confirm('Supprimer ce rapport ?')) return;
+  const sessions = getSessions().filter(s=>s.date!==date);
+  saveSessions(sessions);
+  renderSessions();
+  document.getElementById('rapportView').style.display='none';
+  toast('Rapport supprimé');
+}
+
+// ─── IMPORT CODE ───
+function importerFichierJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const errEl = document.getElementById('codeErr');
+  errEl.style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let data = null;
+    const raw = e.target.result.replace(/[\s\r\n\t]+/g,'');
+    try {
+      const bin = atob(raw);
+      const bytes = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      const json = new TextDecoder('utf-8').decode(bytes);
+      data = JSON.parse(json);
+    } catch(e1){}
+    if(!data){ try { data = JSON.parse(e.target.result); } catch(e2){} }
+    if(!data || !data.date || !data.nomBuvette){
+      errEl.style.display = 'block';
+      errEl.textContent = 'Fichier invalide ou corrompu.';
+      return;
+    }
+    const sessions = getSessions().filter(s=>s.date!==data.date);
+    sessions.push(data);
+    saveSessions(sessions);
+    renderSessions();
+    renderRapport(data);
+    toast('✅ Rapport importé avec succès !');
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function importerCode(){
+  // Nettoyer tout caractere non-base64 (espaces, sauts de ligne, etc.)
+  const raw = document.getElementById('codeInput').value.replace(/[\s\r\n\t]+/g,'');
+  const errEl = document.getElementById('codeErr');
+  errEl.style.display='none';
+  if(!raw){ errEl.style.display='block'; errEl.textContent='Veuillez coller un code.'; return; }
+
+  let data = null;
+
+  // Tentative 1 : TextDecoder UTF-8 (format actuel)
+  try {
+    const bin = atob(raw);
+    const bytes = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    const json = new TextDecoder('utf-8').decode(bytes);
+    data = JSON.parse(json);
+  } catch(e1) {}
+
+  // Tentative 2 : ancien format
+  if(!data) {
+    try {
+      const json = decodeURIComponent(escape(atob(raw)));
+      data = JSON.parse(json);
+    } catch(e2) {}
+  }
+
+  // Tentative 3 : JSON brut
+  if(!data) {
+    try { data = JSON.parse(raw); } catch(e3) {}
+  }
+
+  if(!data || !data.date || !data.nomBuvette){
+    errEl.style.display='block';
+    errEl.textContent='Code invalide. Copiez TOUT le texte depuis la buvette, sans rien modifier.';
+    return;
+  }
+
+  const sessions = getSessions().filter(s=>s.date!==data.date);
+  sessions.push(data);
+  saveSessions(sessions);
+  document.getElementById('codeInput').value='';
+  renderSessions();
+  renderRapport(data);
+  toast('Rapport importe avec succes !');
+}
+
+
+// ─── RENDER RAPPORT ───
+function renderRapport(data){
+  const view = document.getElementById('rapportView');
+  view.style.display='block';
+
+  // KPIs
+  const totalCA = data.totalCA||0;
+  const totalPertes = data.totalPertes||0;
+  const totalApproCout = data.totalApproCout||0;
+  const margeTheo = totalCA - totalApproCout;
+
+  // Ventes par boisson
+  const venduMap={}, caMap={};
+  (data.ventes||[]).forEach(v=>{ venduMap[v.boissonId]=(venduMap[v.boissonId]||0)+v.qte; caMap[v.boissonId]=(caMap[v.boissonId]||0)+v.montant; });
+  (data.commandes||[]).forEach(c=>c.items.forEach(i=>{ venduMap[i.boissonId]=(venduMap[i.boissonId]||0)+i.qte; caMap[i.boissonId]=(caMap[i.boissonId]||0)+i.sous_total; }));
+  const totalImpaye = (data.commandes||[]).filter(c=>c.estImpaye&&!c.regle).reduce((s,c)=>s+c.total,0)
+    +(data.ventes||[]).filter(v=>/(impay|crédit|credit|dette|doit)/i.test(v.obs||'')).reduce((s,v)=>s+v.montant,0);
+
+  const boissonsRef = data.stockSnapshot||[];
+  const sorted = boissonsRef.map(b=>({b, qte:venduMap[b.id]||0, ca:caMap[b.id]||0})).filter(x=>x.qte>0).sort((a,b_)=>b_.qte-a.qte);
+  const maxQte = sorted[0]?.qte||1;
+
+  let html = `
+  <!-- EN-TÊTE -->
+  <div class="rapport-header">
+    <div class="rapport-meta">
+      <div>
+        <div class="rapport-title">📊 ${fmtDate(data.date)}</div>
+        <div class="rapport-sub">🍺 ${data.nomBuvette} &nbsp;·&nbsp; Responsable : ${data.responsable||'—'}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:right;font-family:'Space Mono',monospace">Rapport journalier<br>confidentiel</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kv">CA Total</div>
+        <div class="kn" style="color:var(--green)">${fcfa(totalCA)}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kv">Ventes</div>
+        <div class="kn" style="color:var(--gold)">${(data.nbVentes||0)+(data.nbCommandes||0)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${data.nbVentes||0} ind. · ${data.nbCommandes||0} cmd</div>
+      </div>
+      ${(()=>{ const cond=(data.appros||[]).reduce((s,a)=>s+a.items.reduce((ss,i)=>ss+i.nbCond,0),0); const unites=(data.appros||[]).reduce((s,a)=>s+a.items.reduce((ss,i)=>ss+i.qte,0),0); return cond>0?`<div class="kpi-box"><div class="kv">📦 Casiers Reçus</div><div class="kn" style="color:var(--purple)">${cond}</div><div style="font-size:10px;color:var(--muted);margin-top:3px">${unites} unités</div></div>`:''; })()}
+      ${totalImpaye>0?`<div class="kpi-box">
+        <div class="kv">⚠️ Impayés</div>
+        <div class="kn" style="color:var(--red)">${fcfa(totalImpaye)}</div>
+      </div>`:''}
+      ${totalApproCout>0?`<div class="kpi-box">
+        <div class="kv">Coût Appro</div>
+        <div class="kn" style="color:var(--blue)">${fcfa(totalApproCout)}</div>
+      </div>`:''}
+      ${totalPertes>0?`<div class="kpi-box">
+        <div class="kv">Pertes</div>
+        <div class="kn" style="color:var(--red)">${fcfa(totalPertes)}</div>
+      </div>`:''}
+    </div>
+  </div>`;
+
+  // TOP VENTES
+  if(sorted.length){
+    html+=`<div class="section">
+      <div class="section-title">🏆 Top Ventes du Jour</div>
+      ${sorted.map(x=>`
+        <div class="bar-row">
+          <div class="bar-label">${x.b.emoji||''} ${x.b.nom}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(x.qte/maxQte*100).toFixed(0)}%"></div></div>
+          <div class="bar-val">${x.qte} u · ${fcfa(x.ca)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // COMMANDES — totaux seulement
+  if((data.commandes||[]).length){
+    const totalCmd = (data.commandes||[]).reduce((s,cmd)=>s+cmd.total,0);
+    const nbRegle = (data.commandes||[]).filter(c=>c.regle).length;
+    const nbImpaye = (data.commandes||[]).filter(c=>!c.regle).length;
+    html+=`<div class="section">
+      <div class="section-title">🎫 Commandes Groupées</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+        <div class="kpi-box"><div class="kv">Nombre</div><div class="kn" style="color:var(--gold)">${data.commandes.length}</div></div>
+        <div class="kpi-box"><div class="kv">CA Commandes</div><div class="kn" style="color:var(--green)">${fcfa(totalCmd)}</div></div>
+        ${nbRegle>0?`<div class="kpi-box"><div class="kv">✅ Réglées</div><div class="kn" style="color:var(--green)">${nbRegle}</div></div>`:''}
+        ${nbImpaye>0?`<div class="kpi-box"><div class="kv">⚠️ Impayées</div><div class="kn" style="color:var(--red)">${nbImpaye}</div></div>`:''}
+      </div>
+    </div>`;
+  }
+
+  // VENTES INDIVIDUELLES — totaux seulement
+  if((data.ventes||[]).length){
+    const totalVInd = (data.ventes||[]).reduce((s,v)=>s+v.montant,0);
+    html+=`<div class="section">
+      <div class="section-title">🛒 Ventes Individuelles</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">
+        <div class="kpi-box"><div class="kv">Nombre</div><div class="kn" style="color:var(--gold)">${data.ventes.length}</div></div>
+        <div class="kpi-box"><div class="kv">CA Ventes Ind.</div><div class="kn" style="color:var(--green)">${fcfa(totalVInd)}</div></div>
+      </div>
+    </div>`;
+  }
+
+  // APPROS
+  if((data.appros||[]).length){
+    html+=`<div class="section">
+      <div class="section-title">📥 Approvisionnements</div>
+      ${data.appros.map(a=>{
+        const cout=a.items.reduce((s,i)=>s+i.cout,0);
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="font-weight:600;margin-bottom:6px">${a.heure} — ${a.depot||'Dépôt'} ${a.numDepot?'('+a.numDepot+')':''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Réceptionnaire : ${a.recept||'—'}</div>
+          <table class="tbl"><thead><tr><th>Boisson</th><th>Cond.</th><th>Unités</th><th style="text-align:right">Coût</th></tr></thead>
+          <tbody>${a.items.map(i=>`<tr>
+            <td>${i.emoji} ${i.nom}</td><td class="num">${i.nbCond}</td><td class="num">${i.qte}</td>
+            <td class="num" style="text-align:right;color:var(--red)">${fcfa(i.cout)}</td>
+          </tr>`).join('')}</tbody></table>
+          <div style="text-align:right;font-weight:700;color:var(--red);margin-top:8px">Coût total : ${fcfa(cout)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // PERTES
+  if((data.pertes||[]).length){
+    html+=`<div class="section">
+      <div class="section-title">🗑️ Pertes</div>
+      <table class="tbl"><thead><tr><th>Heure</th><th>Boisson</th><th>Qté</th><th>Raison</th><th style="text-align:right">Valeur perdue</th></tr></thead>
+      <tbody>${data.pertes.map(p=>`<tr>
+        <td class="num" style="color:var(--muted)">${p.heure}</td>
+        <td>${p.emoji} ${p.nom}</td><td class="num">${p.qte}</td><td>${p.raison}</td>
+        <td class="num" style="text-align:right;color:var(--red)">${fcfa(p.valeur)}</td>
+      </tr>`).join('')}</tbody></table>
+      <div style="text-align:right;font-weight:700;color:var(--red);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">Total pertes : ${fcfa(totalPertes)}</div>
+    </div>`;
+  }
+
+  // STOCK FIN DE JOURNÉE
+  if((data.stockSnapshot||[]).length){
+    const snap = data.stockSnapshot;
+    const casierInfo = s => {
+      if(!s.nbParCond||s.nbParCond<=1) return {btl: s.stock+' u', cas: '—'};
+      const cas = Math.floor(s.stock/s.nbParCond);
+      const rem = s.stock%s.nbParCond;
+      return { btl: s.stock+' btl', cas: cas+' cas'+(rem>0?' +'+rem:'') };
+    };
+    const rowBg = (stock, nbParCond) => {
+      if(stock===0) return '#ef444418';
+      if(nbParCond>1 && stock<nbParCond) return '#f59e0b18';
+      return 'transparent';
+    };
+    const rows = snap.map(s => {
+      const info = casierInfo(s);
+      const bg = rowBg(s.stock, s.nbParCond||1);
+      const valeur = (s.stock*(s.prix||0)).toLocaleString('fr-FR');
+      return '<tr style="background:'+bg+'">'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--border)">'+(s.emoji||'')+' '+s.nom+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;color:var(--muted2)">'+(s.type||'—')+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;color:var(--gold);font-weight:700">'+info.btl+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;color:var(--muted2)">'+info.cas+'</td>'
+        +'<td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--green);font-size:12px">'+valeur+' F</td>'
+        +'</tr>';
+    }).join('');
+    const totalBtl = snap.reduce((s,b)=>s+b.stock,0);
+    const totalVal = snap.reduce((s,b)=>s+(b.stock*(b.prix||0)),0);
+    html+='<div class="section">'
+      +'<div class="section-title">📦 Stock Fin de Journée</div>'
+      +'<div style="overflow-x:auto">'
+      +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<thead><tr style="background:var(--card)">'
+      +'<th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Produit</th>'
+      +'<th style="padding:8px 10px;text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Type</th>'
+      +'<th style="padding:8px 10px;text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Quantité</th>'
+      +'<th style="padding:8px 10px;text-align:center;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Casiers</th>'
+      +'<th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border2)">Valeur</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'<tfoot><tr style="background:var(--card);font-weight:700">'
+      +'<td colspan="2" style="padding:10px;font-size:12px;color:var(--muted)">TOTAL</td>'
+      +'<td style="padding:10px;text-align:center;color:var(--gold)">'+totalBtl+' btl</td>'
+      +'<td></td>'
+      +'<td style="padding:10px;text-align:right;color:var(--green)">'+totalVal.toLocaleString('fr-FR')+' F</td>'
+      +'</tr></tfoot>'
+      +'</table></div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:8px">🔴 Rupture &nbsp;|&nbsp; 🟡 Moins d\'un casier</div>'
+      +'</div>';
+  }
+
+  view.innerHTML = html;
+  // Tracker pour sauvegarde
+  rapportActif = data;
+  document.getElementById('btnSave').style.display = 'block';
+  view.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ─── SAUVEGARDER RAPPORT (impression/PDF) ───
+let rapportActif = null;
+
+function sauvegarderRapport(){
+  if(!rapportActif){ toast('Aucun rapport affiché','warn'); return; }
+  // Ouvre la boîte de dialogue impression → Enregistrer en PDF
+  window.print();
+}
+
+
+
+
+// ─── CHANGEMENT / ACTIVATION MOT DE PASSE ───
+function ouvrirChangePwd(){
+  const actif = pwdActif();
+  document.getElementById('pwdModal').style.display='flex';
+  document.getElementById('pwdActuelWrap').style.display = actif ? 'block' : 'none';
+  document.getElementById('pwdModalTitle').textContent = actif ? '🔑 Gérer le mot de passe' : '🔑 Activer un mot de passe';
+  document.getElementById('pwdActuel').value='';
+  document.getElementById('pwdNouveau').value='';
+  document.getElementById('pwdConfirm').value='';
+  document.getElementById('pwdSecours').value='';
+  document.getElementById('pwdErr').style.display='none';
+  document.getElementById('pwdOk').style.display='none';
+  document.getElementById('btnDesactiver').style.display = actif ? 'block' : 'none';
+  setTimeout(()=>(actif ? document.getElementById('pwdActuel') : document.getElementById('pwdNouveau')).focus(), 100);
+}
+function fermerChangePwd(){
+  document.getElementById('pwdModal').style.display='none';
+  majBtnPwd();
+}
+function validerChangePwd(){
+  const actif = pwdActif();
+  const actuel = document.getElementById('pwdActuel').value;
+  const nouveau = document.getElementById('pwdNouveau').value;
+  const conf = document.getElementById('pwdConfirm').value;
+  const errEl = document.getElementById('pwdErr');
+  const okEl = document.getElementById('pwdOk');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if(actif && actuel !== getPwd()){ errEl.textContent='Mot de passe actuel incorrect.'; errEl.style.display='block'; return; }
+  if(nouveau.length < 4){ errEl.textContent='Le mot de passe doit faire au moins 4 caractères.'; errEl.style.display='block'; return; }
+  if(nouveau !== conf){ errEl.textContent='Les deux mots de passe ne correspondent pas.'; errEl.style.display='block'; return; }
+
+  storeSet(DG_PWD_KEY, nouveau);
+  const secours = document.getElementById('pwdSecours').value.trim();
+  if(secours) storeSet('buvette_dg_secours', secours);
+  okEl.textContent = actif ? '✅ Mot de passe modifié !' : '✅ Mot de passe activé !';
+  okEl.style.display='block';
+  setTimeout(()=>fermerChangePwd(), 1500);
+}
+
+function desactiverMotDePasse(){
+  if(!confirm('Désactiver le mot de passe ? L\'appli sera accessible sans code.')) return;
+  storeDel(DG_PWD_KEY);
+  toast('Mot de passe désactivé');
+  fermerChangePwd();
+}
+
+</script>
+
+<!-- MODAL GESTION MOT DE PASSE -->
+<div id="pwdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#111318;border:1px solid #252d3d;border-radius:16px;padding:28px;max-width:340px;width:100%;position:relative;box-shadow:0 40px 80px rgba(0,0,0,.6)">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;color:#d4a843;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <span id="pwdModalTitle">🔑 Gérer le mot de passe</span>
+      <button onclick="fermerChangePwd()" style="background:none;border:none;color:#6b7594;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div id="pwdActuelWrap" style="margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#6b7594;margin-bottom:6px">Mot de passe actuel</div>
+      <input type="password" id="pwdActuel" placeholder="••••••" onkeydown="if(event.key==='Enter')document.getElementById('pwdNouveau').focus()"
+        style="width:100%;background:#161a22;border:1px solid #252d3d;color:#e8eaf0;-webkit-text-fill-color:#e8eaf0;border-radius:10px;padding:11px 14px;font-size:14px;outline:none">
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#6b7594;margin-bottom:6px">Nouveau mot de passe</div>
+      <input type="password" id="pwdNouveau" placeholder="••••••" onkeydown="if(event.key==='Enter')document.getElementById('pwdConfirm').focus()"
+        style="width:100%;background:#161a22;border:1px solid #252d3d;color:#e8eaf0;-webkit-text-fill-color:#e8eaf0;border-radius:10px;padding:11px 14px;font-size:14px;outline:none">
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#6b7594;margin-bottom:6px">Confirmer le mot de passe</div>
+      <input type="password" id="pwdConfirm" placeholder="••••••" onkeydown="if(event.key==='Enter')document.getElementById('pwdSecours').focus()"
+        style="width:100%;background:#161a22;border:1px solid #252d3d;color:#e8eaf0;-webkit-text-fill-color:#e8eaf0;border-radius:10px;padding:11px 14px;font-size:14px;outline:none">
+    </div>
+    <div style="margin-bottom:16px;border-top:1px solid #252d3d;padding-top:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#d4a843;margin-bottom:4px">🔐 Code de secours</div>
+      <div style="font-size:11px;color:#6b7594;margin-bottom:8px">Optionnel. Permet de récupérer l'accès si vous oubliez votre mot de passe.</div>
+      <input type="text" id="pwdSecours" placeholder="Définir un code de secours…" onkeydown="if(event.key==='Enter')validerChangePwd()"
+        style="width:100%;background:#161a22;border:1px solid #d4a843;color:#e8eaf0;-webkit-text-fill-color:#e8eaf0;border-radius:10px;padding:11px 14px;font-size:14px;outline:none">
+    </div>
+    <div id="pwdErr" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px"></div>
+    <div id="pwdOk" style="display:none;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px"></div>
+    <button onclick="validerChangePwd()" style="width:100%;background:#d4a843;color:#0a0c10;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px">Valider</button>
+    <button id="btnDesactiver" onclick="desactiverMotDePasse()" style="width:100%;background:none;border:1px solid #ef4444;color:#ef4444;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer">🔓 Désactiver le mot de passe</button>
+  </div>
+</div>
+
+</body>
+</html>
